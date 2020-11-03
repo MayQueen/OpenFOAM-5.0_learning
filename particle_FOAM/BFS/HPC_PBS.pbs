@@ -1,0 +1,8 @@
+#PBS -N OF_cavity # 设置任务名称
+#PBS -l nodes=1:ppn=1 #设置任务所需的资源
+#PBS -e $PBS_JOBNAME.err # 设定任务err路径
+#PBS -o $PBS_JOBNAME.out # 设定任务输出路径
+#PBS -q serial # 指定任务处理队列
+cd /public/home/yyou/mysoft/OpenFOAN/run/case/cavity # 进入case工作目录
+blockMesh # 执行命令1
+pimpleLPTFoam # 执行命令2
