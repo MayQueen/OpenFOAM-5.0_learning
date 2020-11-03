@@ -1,0 +1,147 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  5.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      kinematicCloudProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    active          true;       // 取消/激活粒子云
+    coupled         true;       //耦合
+    transient       yes;        //瞬态
+    cellValueSourceCorrection off; 
+    maxCo           0.3;  // 瞬态/稳态解（最大库仑数）
+
+    interpolationSchemes
+    {
+        rho             cell;
+        U               cellPoint;
+        mu              cell;
+    }
+
+    integrationSchemes
+    {
+        U               Euler; //启用/禁止欧拉相的动量修正
+    }
+
+    sourceTerms
+    {
+        schemes
+        {
+            U           semiImplicit 1; // 选择用于LPT的插值/积分方案和源项的处理
+        }
+    }
+}
+
+constantProperties
+{
+    rho0            8800; //密度D
+    youngsModulus   1.3e5; //杨氏模量（弹性模量）
+    poissonsRatio   0.35;  //泊松比
+}
+
+subModels
+{
+    particleForces
+    {
+        sphereDrag; // 拖曳力
+        
+        gravity; // 重力/浮力
+    }
+
+    injectionModels
+    {
+	model1
+	{
+            type             patchInjection;  
+            patchName        inlet; // 粒子喷射面
+            duration         1; //粒子存活时间
+	    parcelsPerSecond 33261; //每秒粒子入射速度
+            massTotal        0;
+            parcelBasisType  fixed; //每个包裹的颗粒数
+            flowRateProfile  constant 1; 
+            nParticle        1;
+            SOI              0.4; //粒子喷射开始时间
+            U0               (9.39 0 0); //粒子初始速度
+            sizeDistribution 
+            {
+                type        fixedValue; //粒子大小分布模型
+                fixedValueDistribution
+                {
+                    value   0.00007;
+                }
+            }
+        }
+    }
+
+    dispersionModel none;
+
+    patchInteractionModel standardWallInteraction;
+
+    standardWallInteractionCoeffs
+    {
+        type rebound;
+        e    0.97;
+        mu   0.09;
+    }
+
+    surfaceFilmModel none;
+
+    stochasticCollisionModel none;
+    
+    collisionModel none;    
+
+    pairCollisionCoeffs
+    {
+        maxInteractionDistance  0.00007;
+
+        writeReferredParticleCloud no;
+
+        pairModel pairSpringSliderDashpot;
+
+        pairSpringSliderDashpotCoeffs
+        {
+            useEquivalentSize   no;
+            alpha               0.12; // α: 与恢复系数e相关的系数（图！）
+            b                   1.5; // b：弹簧力→b = 1（线性）或b = 3/2（赫兹理论）
+            mu                  0.52; // µ：摩擦系数
+            cohesionEnergyDensity 0;
+            collisionResolutionSteps 12;
+        };
+        
+        wallModel wallSpringSliderDashpot;
+
+        wallSpringSliderDashpotCoeffs
+        {
+            useEquivalentSize no;
+            collisionResolutionSteps 12;
+            youngsModulus   1e10;
+            poissonsRatio   0.23;
+            alpha           0.12;
+            b               1.5;
+            mu              0.43;
+            cohesionEnergyDensity 0;
+        };
+    }
+}
+
+cloudFunctions
+{
+    voidFraction1
+    {
+        type            voidFraction; //设置一些cloudFunctions（记录粒子轨迹，计算粒子腐蚀，...）
+    }
+}
+
+// ************************************************************************* //
