@@ -1,8 +1,29 @@
-#PBS -N OF_cavity # 设置任务名称
-#PBS -l nodes=1:ppn=1 #设置任务所需的资源
-#PBS -e $PBS_JOBNAME.err # 设定任务err路径
-#PBS -o $PBS_JOBNAME.out # 设定任务输出路径
-#PBS -q serial # 指定任务处理队列
-cd /public/home/yyou/mysoft/OpenFOAN/run/case/cavity # 进入case工作目录
-blockMesh # 执行命令1
-pimpleLPTFoam # 执行命令2
+/* ++++++++++++++++++串行任务++++++++++++++++++++++*\
+
+\* +++++++++++++++++++++++++++++++++++++++++++++++++*/
+#PBS -N OF_BFS_serials # 自定义任务名称[OF_BFS]
+#PBS -l nodes=2:ppn=1 #设置任务所需的资源：节点位置[2]及数量[1].
+#PBS -e $PBS_JOBNAME.err # 设定任务err路径[默认为项目主目录]
+#PBS -o $PBS_JOBNAME.out # 设定任务输出路径[默认为项目主目录]
+#PBS -q serial # 指定任务处理队列,串行[serial];并行[parallel]
+cd /public/home/yyou/mysoft/OpenFOAM/OpenFOAM-5.0/run/BFS # 进入[case]工作目录
+blockMesh # 执行命令[blockMesh]划分网格
+checkMesh # 执行命令[checkMesh],检查网格
+pimpleLPTFoam # 串行：执行命令[pimpleLPTFoam]开始计算
+
+/* ++++++++++++++++并行任务++++++++++++++++++++++++*\
+      # 需要补充system/decomposeParDict文件
+\* +++++++++++++++++++++++++++++++++++++++++++++++++*/
+#PBS -N OF_BFS_parallel 
+#PBS -l nodes=2:ppn=4 #设置任务所需的资源：节点位置[2]及数量[4].
+#PBS -e $PBS_JOBNAME.err
+#PBS -o $PBS_JOBNAME.out
+#PBS -q parallel # 更改为并行模式
+cd /public/home/yyou/mysoft/OpenFOAM/OpenFOAM-5.0/run/BFS
+blockMesh
+checkMesh
+decomposePar # 划分计算域,划分完成后项目路径下会产生"processor[1-4]"文件
+mpirun -np [4] pimpleLPT -parallel # 执行并行计算
+reconstructPar # 合并计算域
+foamToVTK # 将结果保存为VTK格式
+
